@@ -12,6 +12,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from data_loaders import load_data
 
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,17 @@ def main():
     if not validate_input(args.input):
         # 5. Exit with status code 1 if invalid
         sys.exit(1)
+
+    # Part 2: Load the file
+    input_path = Path(args.input)
+
+    try:
+        data = load_data(input_path)
+    except ValueError as e:
+        logger.error(f"Failed to load data: {e}")
+        sys.exit(1)
+
+    logger.info(f"Loaded data from {input_path}")
 
 
 if __name__ == "__main__":
