@@ -16,11 +16,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-
-def setup_logging(verbose=False):
-    """Configure logging for the pipeline."""
-    import logging
-
 def setup_logging(verbose=False):
     """
     Configure Python's logging system.
@@ -39,7 +34,6 @@ def setup_logging(verbose=False):
     )
 
     return logging.getLogger(__name__)
-
 
 
 def parse_arguments():
