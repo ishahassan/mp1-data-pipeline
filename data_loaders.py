@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_csv(filepath):
-    """Load a CSV file into a DataFrame."""
+    """Load a CSV file into a DataFrame. filepath is a Path object."""
     df = pd.read_csv(filepath)
     logger.info(f"Loaded CSV file: {filepath} ({len(df)} rows)")
     return df
