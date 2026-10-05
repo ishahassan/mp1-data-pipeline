@@ -11,6 +11,7 @@ Usage:
 import argparse
 import logging
 import sys
+from data_processor import process_data, create_cleaning_report
 from pathlib import Path
 from data_loaders import load_data
 
@@ -30,7 +31,7 @@ def setup_logging(verbose=False):
 
     logging.basicConfig(
         level=log_level,
-        format="%(asctime)s %(levelname)-8s %(message)s",
+        format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
         datefmt="%H:%M:%S"
     )
 
@@ -46,15 +47,15 @@ def parse_arguments():
                         required=True, 
                         help="Path to the input data file")
     
+    parser.add_argument("--config",
+                    required=True,
+                    help="Path to the YAML configuration file")
+    
     parser.add_argument("--output", 
                         "-o",
                         required=True, 
                         help="Path to the output data file")
-    
-    parser.add_argument("--format", 
-                        choices=["csv", "json"], 
-                        default="csv", 
-                        help="Output format (default: csv)")
+
     
     parser.add_argument("--verbose", 
                         "-v",
@@ -94,25 +95,52 @@ def main():
 
     # 3. Log the parsed arguments at DEBUG level
     logger.debug(
-        f"Arguments parsed: input={args.input}, output={args.output}, format={args.format}"
-    )
+    f"Arguments parsed: input={args.input}, output={args.output}, config={args.config}"
+)
 
     # 4. Validate the input file
     if not validate_input(args.input):
         # 5. Exit with status code 1 if invalid
         sys.exit(1)
 
+    if not validate_input(args.config):
+        sys.exit(1)
+
     # Part 2: Load the file
     input_path = Path(args.input)
+    config_path = Path(args.config)
 
     try:
         data = load_data(input_path)
+        config = load_data(config_path)
     except ValueError as e:
         logger.error(f"Failed to load data: {e}")
         sys.exit(1)
 
     logger.info(f"Loaded data from {input_path}")
 
+    df_before = data.copy()
+
+    try:
+        df_after = process_data(data, config)
+    except ValueError as e:
+        logger.error(f"Failed to process data: {e}")
+        sys.exit(1)
+
+    ### 6. Create the Output
+    report = create_cleaning_report(df_before, df_after)
+
+    print("Cleaning Report:")
+    for key, value in report.items():
+        print(f"{key}: {value}")
+
+
+    logger.info(f"Processing complete: {len(df_before)} → {len(df_after)} rows")
+
+    output_path = Path(args.output)
+    df_after.to_csv(output_path, index=False)
+
+    logger.info(f"Saved cleaned data to {output_path}")
 
 if __name__ == "__main__":
     main()
