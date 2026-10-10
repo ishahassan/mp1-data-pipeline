@@ -1,3 +1,13 @@
+validation:
+  required_columns:
+    - record_id
+    - name
+    - rating
+    - category
+    - status
+  numeric_columns:
+    - rating
+
 processing:
   remove_duplicates: true
 
@@ -8,6 +18,22 @@ processing:
   outliers:
     enabled: true
     columns:
-      - Score
+      - rating
     method: "iqr"
     threshold: 1.5
+
+
+# 1. Inspect the columns and values in fixtures/sample_data.csv. 
+
+# 2. Update your configuration:
+
+# - Add a `validation` section:
+#   - `required_columns`: a list of all column names in the sample data.
+#   - `numeric_columns`: a list of column name(s) whose values should be numeric and meaningful for validation.
+
+# - Under the existing `processing` section:
+#   - Enable duplicate removal.
+#   - Enable missing-value handling with `axis: "rows"`.
+#   - Enable outlier removal for numeric column(s), using `method: "iqr"` and `threshold: 1.5`.
+
+# This configuration matches the provided `fixtures/sample_data.csv`. Do not modify the validation or processing modules to match the sample data.

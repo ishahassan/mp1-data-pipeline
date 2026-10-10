@@ -10,32 +10,24 @@ Usage:
 
 import argparse
 import logging
+from logging import config
 import sys
-from data_processor import process_data, create_cleaning_report
+# from data_processor import process_data, create_cleaning_report
 from pathlib import Path
-from data_loaders import load_data
+# from data_loaders import load_data
+
+from src import (
+    create_cleaning_report,
+    load_data,
+    process_data,
+    save_data,
+    setup_logging,
+    validate_dataframe,
+    validate_input,
+)
 
 
 logger = logging.getLogger(__name__)
-
-def setup_logging(verbose=False):
-    """
-    Configure Python's logging system.
-
-    -Use `logging.DEBUG` when `verbose` is `True`.
-    -Use `logging.INFO` when `verbose` is `False`.
-    -Include the **time, log level, and message** in each log entry.
-    """
-
-    log_level = logging.DEBUG if verbose else logging.INFO
-
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
-        datefmt="%H:%M:%S"
-    )
-
-    return logging.getLogger(__name__)
 
 
 def parse_arguments():
@@ -65,33 +57,13 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def validate_input(filepath):
-    """Check whether the input path exists and is a file.
-    Validate that the input path exists and is a file.
-
-    Returns:
-        True  — if the file exists
-        False — if the file does not exist
-    """
-
-    logger = logging.getLogger(__name__)
-    p = Path(filepath)
-
-    if not p.is_file():
-        logger.error(f"Input file not found: {filepath}")
-        return False
-
-    logger.info(f"Input file validated: {filepath}")
-    return True
-
-
 def main():
     """Main pipeline function."""
     # 1. Parse command-line arguments
     args = parse_arguments()
 
     # 2. Set up logging using the --verbose option
-    logger = setup_logging(verbose=args.verbose)
+    setup_logging(verbose=args.verbose)
 
     # 3. Log the parsed arguments at DEBUG level
     logger.debug(
@@ -113,34 +85,45 @@ def main():
     try:
         data = load_data(input_path)
         config = load_data(config_path)
+
+        required_columns = config["validation"]["required_columns"]
+        numeric_columns = config["validation"]["numeric_columns"]
+
+
     except ValueError as e:
         logger.error(f"Failed to load data: {e}")
         sys.exit(1)
 
-    logger.info(f"Loaded data from {input_path}")
-
     df_before = data.copy()
 
+    # - Before processing, call `validate_dataframe()` inside a separate `try`/`except` block. Catch `ValueError` and exit with status code `1`. 
     try:
-        df_after = process_data(data, config)
+        df_validated = validate_dataframe(df_before, required_columns, numeric_columns)
+    except ValueError as e:
+        logger.error(f"Validation failed: {e}")
+        sys.exit(1)
+
+    logger.info(f"Validation complete: {len(df_before)} -> {len(df_validated)} rows")
+
+    try:
+        df_after = process_data(df_validated, config)
     except ValueError as e:
         logger.error(f"Failed to process data: {e}")
         sys.exit(1)
 
+    logger.info(f"Processing complete: {len(df_validated)} -> {len(df_after)} rows")
     ### 6. Create the Output
+
+    output_path = Path(args.output)
+    save_data(df_after, output_path)
+    logger.info(f"Saved cleaned data to {output_path}")
+
     report = create_cleaning_report(df_before, df_after)
 
     print("Cleaning Report:")
     for key, value in report.items():
         print(f"{key}: {value}")
 
-
-    logger.info(f"Processing complete: {len(df_before)} → {len(df_after)} rows")
-
-    output_path = Path(args.output)
-    df_after.to_csv(output_path, index=False)
-
-    logger.info(f"Saved cleaned data to {output_path}")
 
 if __name__ == "__main__":
     main()

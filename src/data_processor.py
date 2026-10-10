@@ -8,35 +8,35 @@ def remove_duplicates(df):
     before = len(df)
     df = df.drop_duplicates()
     after = len(df)
-    logger.debug(f"Removed {before - after} duplicate rows.")
+    logger.debug(f"remove_duplicates: {before} -> {after} rows") #Removed {before - after} duplicate rows. Specifically, 
     return df
 
 
 def handle_missing(df, axis="rows"):
     """Drop rows or columns containing missing values."""
-    before = df.shape  # (rows_before, cols_before)
+    
+    before_rows, before_cols = df.shape  # (rows_before, cols_before)
 
     if axis == "rows":
         df = df.dropna(axis=0)
+        after_rows = len(df)  # (rows_after, cols_after)
+        logger.debug(f"handle_missing: {before_rows} -> {after_rows} rows") #Removed {before_rows - after_rows} rows containing missing values. Specifically, 
+
     elif axis == "columns":
         df = df.dropna(axis=1)
+        after_cols = df.shape[1] # (rows_after, cols_after)
+        logger.debug(f"handle_missing: {before_cols} -> {after_cols} columns") #Removed {before_cols - after_cols} columns containing missing values. Specifically, 
+
     else:
         logger.error(f"Unsupported axis value: {axis}")
-        raise ValueError("axis must be 'rows' or 'columns'")
-
-    after = df.shape  # (rows_after, cols_after)
-
-    if axis == "rows":
-        removed = before[0] - after[0]
-    else:  # columns
-        removed = before[1] - after[1]
-
-    logger.debug(f"Removed {removed} {axis} containing missing values.")
+        raise ValueError(f"Unsupported axis value: {axis}")
+  
     return df
 
 
 def remove_outliers(df, columns, method, threshold):
     """Remove outliers from the specified numeric columns."""
+
     # Validate method first — fail fast regardless of columns
     if method not in ("iqr", "zscore"):
         logger.error(f"Unsupported outlier method: {method}")
@@ -54,7 +54,7 @@ def remove_outliers(df, columns, method, threshold):
             logger.warning(f"Column not numeric: {col}")
             continue
 
-        rows_before = len(df)
+        before = len(df)
 
         if method == "iqr":
             q1 = df[col].quantile(0.25)
@@ -70,10 +70,8 @@ def remove_outliers(df, columns, method, threshold):
             zscores = (df[col] - mean) / std
             df = df[zscores.abs() <= threshold]
 
-        rows_removed = rows_before - len(df)
-        logger.debug(
-            f"{col}: method={method}, threshold={threshold}, removed={rows_removed}"
-        )
+        rows_removed = before - len(df)
+        logger.debug(f"{col}: method={method}, threshold={threshold}, removed={rows_removed}")
 
     return df
 
@@ -82,7 +80,7 @@ def process_data(df, config):
     """Apply the processing steps enabled in the configuration."""
 
     steps = config.get("processing", {})
-
+    
     if steps.get("remove_duplicates", False):
         df = remove_duplicates(df)
 
