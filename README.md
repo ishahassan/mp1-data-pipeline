@@ -8,7 +8,7 @@ This project implements a modular data‑cleaning pipeline that loads raw input 
 Run the pipeline using the provided sample data:
     python pipeline.py --input fixtures/sample_data.csv --output output/clean.csv --config config/config.yaml --verbose
 
-Expected Output: 
+*Expected Output*: 
     INFO     src.utils        — Input file validated: fixtures/sample_data.csv
     INFO     src.utils        — Input file validated: config/config.yaml
     INFO     src.data_loaders — Loaded CSV file: fixtures/sample_data.csv (100 rows)
