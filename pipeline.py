@@ -105,6 +105,8 @@ def main():
 
     logger.info(f"Validation complete: {len(df_before)} -> {len(df_validated)} rows")
 
+    df_before = df_validated.copy()
+    
     try:
         df_after = process_data(df_validated, config)
     except ValueError as e:
